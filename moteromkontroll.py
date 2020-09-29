@@ -1,9 +1,12 @@
 import socket
 import time
 import os
+from progress.bar import IncrementalBar
 
 HOST = 0
 PORT = 6969
+
+
 
 textfile = open('device_list.txt', 'r+')
 IP_LIST = textfile.read().split(',')
@@ -31,40 +34,31 @@ for IP in IP_LIST:
 
 
 def FindServer():
-        for IPSCAN in range(1,254):
-            try: 
+        with IncrementalBar('Skanner etter møteroms enhet', fill='#', max=254) as bar:
+            for IPSCAN in range(1,254):
+                bar.next()
+                try: 
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.settimeout(1)
+                    hostip = socket.gethostbyname(socket.gethostname()) 
+                    address = hostip.rsplit('.',  1)[0] + '.' + str(IPSCAN)
+                    s.connect((address, 7070))
+                    
+                    scananswer = s.recv(1024)
+                    
+                    if len(scananswer.decode()) > 2:
+                        global HOST
+                        HOST = address
+                        bar.finish()
+                        print('Enhet funnet: ', scananswer.decode())
+                        textfile.write(str(address))
+                        break
 
-                os.system('cls')
-                print('Finner enhet: |')
-                time.sleep(0.1)
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.settimeout(1)
-                hostip = socket.gethostbyname(socket.gethostname()) 
-                os.system('cls')
-                
-                print('Finner enhet: /')
-                time.sleep(0.1)
-                address = hostip.rsplit('.',  1)[0] + '.' + str(IPSCAN)
-                s.connect((address, 7070))
-                os.system('cls')
-                
-                print('Finner enhet: —')
-                time.sleep(0.1)
-                scananswer = s.recv(1024)
-                os.system('cls')
 
-                print('Finner enhet: "\"')
-                time.sleep(0.1)
-                if len(scananswer.decode()) > 2:
-                    global HOST
-                    HOST = address
-                    print('Enhet funnet: ', scananswer.decode())
-                    textfile.write(str(address))
-                    break
-
-            except socket.timeout:
-                continue
-                
+                    
+                except socket.timeout:
+                    continue
+                    
 
 def ChangeMode(): 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -72,7 +66,7 @@ def ChangeMode():
         unit = s.recv(1024) 
         print("Connected successfully to", unit.decode())
         select = input('''
-        1. Sett modus til utilgjengelig
+        1. Sett modus til utilpgjengelig
         2. Sett modus til tilgjengelig
         : ''')
         if '1' in select:
@@ -86,4 +80,8 @@ for IP in IP_LIST:
     if len(IP) == 0:
         FindServer()
 
-ChangeMode()
+try:
+    ChangeMode()
+except ConnectionRefusedError():
+    print('Tilkobling til tjener: ', IP, 'nektet. Vennligst prøv en annen IP-Adresse \n')
+    time.sleep(1)

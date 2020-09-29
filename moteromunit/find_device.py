@@ -1,13 +1,11 @@
 import socket
 from sys import excepthook
-import time
-import cv2
-import numpy as np
 
-HOST = '10.0.0.166'  
+
+HOST = socket.gethostbyname(socket.gethostname())
 PORT = 7070     
 NAME = 'Moteroms-klient 1'
-
+print ('Find_device broadcaster nå på:', HOST, '\nPort:',PORT)
 while True: 
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
